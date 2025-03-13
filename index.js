@@ -1,4 +1,4 @@
-const io = require("socket.io")(process.env.PORT || 10000, {
+const io = require("socket.io")( "https://loomsocket.onrender.com "|| 10000, {
   cors: {
     origin: "*", // Allow all origins, update for production
     methods: ["GET", "POST"]
