@@ -1,37 +1,39 @@
-const io = require("socket.io")( "https://loomsocket.onrender.com "|| 10000, {
+const io = require("socket.io")(8800, {
   cors: {
-    origin: "*", // Allow all origins, update for production
-    methods: ["GET", "POST"]
+    origin: "https://loomsocket.onrender.com",
   },
 });
 
 let activeUsers = [];
 
 io.on("connection", (socket) => {
-  console.log("A user connected:", socket.id);
-
-  // Add new user
-  socket.on("add-user", (userId) => {
-    if (!activeUsers.some((user) => user.userId === userId)) {
-      activeUsers.push({ userId, socketId: socket.id });
-      console.log("New User Connected:", activeUsers);
+  // add new User
+  socket.on("new-user-add", (newUserId) => {
+    // if user is not added previously
+    if (!activeUsers.some((user) => user.userId === newUserId)) {
+      activeUsers.push({ userId: newUserId, socketId: socket.id });
+      console.log("New User Connected", activeUsers);
     }
+    // send all active users to new user
     io.emit("get-users", activeUsers);
   });
 
-  // Send Message to a specific user
+  socket.on("disconnect", () => {
+    // remove user from active users
+    activeUsers = activeUsers.filter((user) => user.socketId !== socket.id);
+    console.log("User Disconnected", activeUsers);
+    // send all active users to all users
+    io.emit("get-users", activeUsers);
+  });
+
+  // send message to a specific user
   socket.on("send-message", (data) => {
     const { receiverId } = data;
     const user = activeUsers.find((user) => user.userId === receiverId);
+    console.log("Sending from socket to :", receiverId)
+    console.log("Data: ", data)
     if (user) {
-      io.to(user.socketId).emit("receive-message", data);
+      io.to(user.socketId).emit("recieve-message", data);
     }
-  });
-
-  // Handle user disconnect
-  socket.on("disconnect", () => {
-    activeUsers = activeUsers.filter((user) => user.socketId !== socket.id);
-    console.log("User Disconnected", activeUsers);
-    io.emit("get-users", activeUsers);
   });
 });
